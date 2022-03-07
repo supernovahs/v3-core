@@ -868,13 +868,15 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
     /// @inheritdoc IUniswapV3PoolOwnerActions
     function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override lock onlyFactoryOwner {
-        require(
-            (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10)) &&
-                (feeProtocol1 == 0 || (feeProtocol1 >= 4 && feeProtocol1 <= 10))
-        );
-        uint8 feeProtocolOld = slot0.feeProtocol;
-        slot0.feeProtocol = feeProtocol0 + (feeProtocol1 << 4);
-        emit SetFeeProtocol(feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1);
+        unchecked {
+            require(
+                (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10)) &&
+                    (feeProtocol1 == 0 || (feeProtocol1 >= 4 && feeProtocol1 <= 10))
+            );
+            uint8 feeProtocolOld = slot0.feeProtocol;
+            slot0.feeProtocol = feeProtocol0 + (feeProtocol1 << 4);
+            emit SetFeeProtocol(feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1);
+        }
     }
 
     /// @inheritdoc IUniswapV3PoolOwnerActions

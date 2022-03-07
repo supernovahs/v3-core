@@ -92,7 +92,9 @@ library SqrtPriceMath {
 
             require(sqrtPX96 > quotient);
             // always fits 160 bits
-            return uint160(sqrtPX96 - quotient);
+            unchecked {
+                return uint160(sqrtPX96 - quotient);
+            }
         }
     }
 
