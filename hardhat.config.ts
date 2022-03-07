@@ -6,7 +6,7 @@ import 'hardhat-typechain'
 export default {
   networks: {
     hardhat: {
-      allowUnlimitedContractSize: true,
+      allowUnlimitedContractSize: false,
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -34,7 +34,7 @@ export default {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 800,
+        runs: 625,
       },
       metadata: {
         // do not include the metadata hash, since this is machine dependent

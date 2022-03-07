@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import {IUniswapV3PoolImmutables, IUniswapV3PoolState, IUniswapV3PoolActions, IUniswapV3PoolEvents, IUniswapV3PoolDerivedState, IUniswapV3PoolOwnerActions, IUniswapV3Pool} from './interfaces/IUniswapV3Pool.sol';
+import {IUniswapV3PoolImmutables, IUniswapV3PoolState, IUniswapV3PoolActions, IUniswapV3PoolDerivedState, IUniswapV3PoolOwnerActions, IUniswapV3Pool} from './interfaces/IUniswapV3Pool.sol';
 
 import {NoDelegateCall} from './NoDelegateCall.sol';
 
@@ -98,7 +98,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// to a function before the pool is initialized. The reentrancy guard is required throughout the contract because
     /// we use balance checks to determine the payment status of interactions such as mint, swap and flash.
     modifier lock() {
-        require(slot0.unlocked, 'LOK');
+        if (!slot0.unlocked) revert LOK();
         slot0.unlocked = false;
         _;
         slot0.unlocked = true;
@@ -120,9 +120,9 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
     /// @dev Common checks for valid tick inputs.
     function checkTicks(int24 tickLower, int24 tickUpper) private pure {
-        require(tickLower < tickUpper, 'TLU');
-        require(tickLower >= TickMath.MIN_TICK, 'TLM');
-        require(tickUpper <= TickMath.MAX_TICK, 'TUM');
+        if (tickLower >= tickUpper) revert TLU();
+        if (tickLower < TickMath.MIN_TICK) revert TLM();
+        if (tickUpper > TickMath.MAX_TICK) revert TUM();
     }
 
     /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32. This method is overridden in tests.
@@ -270,7 +270,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     /// @inheritdoc IUniswapV3PoolActions
     /// @dev not locked because it initializes unlocked
     function initialize(uint160 sqrtPriceX96) external override {
-        require(slot0.sqrtPriceX96 == 0, 'AI');
+        if (slot0.sqrtPriceX96 != 0) revert AI();
 
         int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
@@ -486,8 +486,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         if (amount0 > 0) balance0Before = balance0();
         if (amount1 > 0) balance1Before = balance1();
         IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
-        if (amount0 > 0) require(balance0Before + amount0 <= balance0(), 'M0');
-        if (amount1 > 0) require(balance1Before + amount1 <= balance1(), 'M1');
+        if (amount0 > 0 && balance0Before + amount0 > balance0()) revert M0();
+        if (amount1 > 0 && balance1Before + amount1 > balance1()) revert M1();
 
         emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
@@ -609,11 +609,11 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint160 sqrtPriceLimitX96,
         bytes calldata data
     ) external override noDelegateCall returns (int256 amount0, int256 amount1) {
-        require(amountSpecified != 0, 'AS');
+        if (amountSpecified == 0) revert AS();
 
         Slot0 memory slot0Start = slot0;
 
-        require(slot0Start.unlocked, 'LOK');
+        if (!slot0Start.unlocked) revert LOK();
         require(
             zeroForOne
                 ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO
@@ -803,7 +803,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
             uint256 balance0Before = balance0();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
-            require(balance0Before + uint256(amount0) <= balance0(), 'IIA');
+            if (balance0Before + uint256(amount0) > balance0()) revert IIA();
         } else {
             unchecked {
                 if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));
@@ -811,7 +811,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
 
             uint256 balance1Before = balance1();
             IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
-            require(balance1Before + uint256(amount1) <= balance1(), 'IIA');
+            if (balance1Before + uint256(amount1) > balance1()) revert IIA();
         }
 
         emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);
@@ -826,7 +826,7 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         bytes calldata data
     ) external override lock noDelegateCall {
         uint128 _liquidity = liquidity;
-        require(_liquidity > 0, 'L');
+        if (_liquidity <= 0) revert L();
 
         uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);
         uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);
@@ -841,8 +841,8 @@ contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
         uint256 balance0After = balance0();
         uint256 balance1After = balance1();
 
-        require(balance0Before + fee0 <= balance0After, 'F0');
-        require(balance1Before + fee1 <= balance1After, 'F1');
+        if (balance0Before + fee0 > balance0After) revert F0();
+        if (balance1Before + fee1 > balance1After) revert F1();
 
         unchecked {
             // sub is safe because we know balanceAfter is gt balanceBefore by at least fee

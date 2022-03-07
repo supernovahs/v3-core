@@ -9,6 +9,9 @@ pragma solidity ^0.8.0;
 /// Observations are overwritten when the full length of the oracle array is populated.
 /// The most recent observation is available, independent of the length of the oracle array, by passing 0 to observe()
 library Oracle {
+    error I();
+    error OLD();
+
     struct Observation {
         // the block timestamp of the observation
         uint32 blockTimestamp;
@@ -115,7 +118,7 @@ library Oracle {
         uint16 next
     ) internal returns (uint16) {
         unchecked {
-            require(current > 0, 'I');
+            if (current <= 0) revert I();
             // no-op if the passed next value isn't greater than the current next value
             if (next <= current) return current;
             // store in each slot to prevent fresh SSTOREs in swaps
@@ -234,7 +237,7 @@ library Oracle {
             if (!beforeOrAt.initialized) beforeOrAt = self[0];
 
             // ensure that the target is chronologically at or after the oldest observation
-            require(lte(time, beforeOrAt.blockTimestamp, target), 'OLD');
+            if (!lte(time, beforeOrAt.blockTimestamp, target)) revert OLD();
 
             // if we've reached this point, we have to binary search
             return binarySearch(self, time, target, index, cardinality);
@@ -329,7 +332,7 @@ library Oracle {
         uint16 cardinality
     ) internal view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) {
         unchecked {
-            require(cardinality > 0, 'I');
+            if (cardinality <= 0) revert I();
 
             tickCumulatives = new int56[](secondsAgos.length);
             secondsPerLiquidityCumulativeX128s = new uint160[](secondsAgos.length);

@@ -6,6 +6,7 @@ import {IUniswapV3PoolState} from './pool/IUniswapV3PoolState.sol';
 import {IUniswapV3PoolDerivedState} from './pool/IUniswapV3PoolDerivedState.sol';
 import {IUniswapV3PoolActions} from './pool/IUniswapV3PoolActions.sol';
 import {IUniswapV3PoolOwnerActions} from './pool/IUniswapV3PoolOwnerActions.sol';
+import {IUniswapV3PoolErrors} from './pool/IUniswapV3PoolErrors.sol';
 import {IUniswapV3PoolEvents} from './pool/IUniswapV3PoolEvents.sol';
 
 /// @title The interface for a Uniswap V3 Pool
@@ -18,6 +19,7 @@ interface IUniswapV3Pool is
     IUniswapV3PoolDerivedState,
     IUniswapV3PoolActions,
     IUniswapV3PoolOwnerActions,
+    IUniswapV3PoolErrors,
     IUniswapV3PoolEvents
 {
 

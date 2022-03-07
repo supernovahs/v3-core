@@ -8,6 +8,8 @@ import {TickMath} from './TickMath.sol';
 /// @title Tick
 /// @notice Contains functions for managing tick processes and relevant calculations
 library Tick {
+    error LO();
+
     using SafeCast for int256;
 
     // info stored for each initialized individual tick
@@ -128,7 +130,7 @@ library Tick {
             ? liquidityGrossBefore - uint128(-liquidityDelta)
             : liquidityGrossBefore + uint128(liquidityDelta);
 
-        require(liquidityGrossAfter <= maxLiquidity, 'LO');
+        if (liquidityGrossAfter > maxLiquidity) revert LO();
 
         flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0);
 
