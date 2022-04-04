@@ -66,7 +66,6 @@ contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegat
         // 16384 ticks represents a >5x price change with ticks of 1 bips
         require(tickSpacing > 0 && tickSpacing < 16384);
         require(feeAmountTickSpacing[fee] == 0);
-
         feeAmountTickSpacing[fee] = tickSpacing;
         emit FeeAmountEnabled(fee, tickSpacing);
     }
